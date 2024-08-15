@@ -22,12 +22,46 @@ import (
 
 // ClusterDefinitionSpec defines the desired state of ClusterDefinition.
 type ClusterDefinitionSpec struct {
+	// +optional
+	Shardings []ShardingDefinition `json:"shardings"`
+
 	// Topologies defines all possible topologies within the cluster.
 	//
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=128
 	// +optional
 	Topologies []ClusterTopology `json:"topologies,omitempty"`
+}
+
+// ShardingDefinition ...
+// +kubebuilder:validation:XValidation:rule="self.minShards >= 0 && self.maxReplicas <= 1024",message="the minimum and maximum limit of shards should be in the range of [0, 1024]"
+// +kubebuilder:validation:XValidation:rule="self.minShards <= self.maxShards",message="the minimum shards limit should be no greater than the maximum"
+type ShardingDefinition struct {
+	// Name is the unique identifier for the sharding.
+	//
+	// +kubebuilder:validation:Required
+	Name string `json:"name"`
+
+	// +kubebuilder:validation:Required
+	CompDef string `json:"compDef"`
+
+	// The minimum limit of shards.
+	//
+	// +optional
+	MinShards *int32 `json:"minShards,omitempty"`
+
+	// The maximum limit of shards.
+	//
+	// +optional
+	MaxShards *int32 `json:"maxShards,omitempty"`
+
+	// +kubebuilder:default=Serial
+	// +optional
+	ProvisionStrategy *UpdateStrategy `json:"provisionStrategy,omitempty"`
+
+	// +kubebuilder:default=Serial
+	// +optional
+	UpdateStrategy *UpdateStrategy `json:"updateStrategy,omitempty"`
 }
 
 // ClusterTopology represents the definition for a specific cluster topology.
@@ -41,10 +75,17 @@ type ClusterTopology struct {
 
 	// Components specifies the components in the topology.
 	//
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:validation:MinItems=0
 	// +kubebuilder:validation:MaxItems=128
-	Components []ClusterTopologyComponent `json:"components"`
+	// +optional
+	Components []ClusterTopologyComponent `json:"components,omitempty"`
+
+	// Shardings specifies the shardings in the topology.
+	//
+	// +kubebuilder:validation:MinItems=0
+	// +kubebuilder:validation:MaxItems=128
+	// +optional
+	Shardings []ClusterTopologySharding `json:"shardings,omitempty"`
 
 	// Specifies the sequence in which components within a cluster topology are
 	// started, stopped, and upgraded.
@@ -88,6 +129,51 @@ type ClusterTopologyComponent struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:MaxLength=64
 	CompDef string `json:"compDef"`
+
+	// The minimum limit of components that can be instantiated from the specified ComponentDefinition.
+	//
+	// +optional
+	MinCount *int32 `json:"minCount,omitempty"`
+
+	// The maximum limit of components that can be instantiated from the specified ComponentDefinition.
+	//
+	// +optional
+	MaxCount *int32 `json:"maxCount,omitempty"`
+
+	// Specifies the provisioning strategy for the components.
+	//
+	// +optional
+	ProvisionStrategy *UpdateStrategy `json:"provisionStrategy,omitempty"`
+
+	// Specifies the update strategy for the components.
+	//
+	// +optional
+	UpdateStrategy *UpdateStrategy `json:"updateStrategy,omitempty"`
+}
+
+// ClusterTopologySharding defines a Sharding within a ClusterTopology.
+type ClusterTopologySharding struct {
+	// Defines the unique identifier of the sharding within the cluster topology.
+	// It follows IANA Service naming rules and is used as part of the Service's DNS name.
+	// The name must start with a lowercase letter, can contain lowercase letters, numbers,
+	// and hyphens, and must end with a lowercase letter or number.
+	//
+	// Cannot be updated once set.
+	//
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:MaxLength=16
+	// +kubebuilder:validation:Pattern:=`^[a-z]([a-z0-9\-]*[a-z0-9])?$`
+	Name string `json:"name"`
+
+	// Once set, this field cannot be updated.
+	//
+	// +kubebuilder:validation:Required
+	ShardingDef string `json:"shardingDef"`
+
+	// Once set, this field cannot be updated.
+	//
+	// +kubebuilder:validation:Required
+	Sharding ShardingDefinition `json:"sharding"`
 }
 
 // ClusterTopologyOrders manages the lifecycle of components within a cluster by defining their provisioning,
