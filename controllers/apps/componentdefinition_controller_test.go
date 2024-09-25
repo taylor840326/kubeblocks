@@ -102,17 +102,17 @@ var _ = Describe("ComponentDefinition Controller", func() {
 	})
 
 	Context("volumes", func() {
-		It("enable volume protection w/o actions set", func() {
+		It("enable volume high watermark w/o actions set", func() {
 			By("create a ComponentDefinition obj")
 			componentDefObj := testapps.NewComponentDefinitionFactory(componentDefName).
 				SetRuntime(nil).
 				AddVolume("default", true, 85).
 				Create(&testCtx).GetObject()
 
-			checkObjectStatus(componentDefObj, kbappsv1.UnavailablePhase)
+			checkObjectStatus(componentDefObj, kbappsv1.AvailablePhase)
 		})
 
-		It("enable volume protection w/ actions set", func() {
+		It("enable volume high watermark w/ actions set", func() {
 			By("create a ComponentDefinition obj")
 			componentDefObj := testapps.NewComponentDefinitionFactory(componentDefName).
 				SetRuntime(nil).
